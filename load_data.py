@@ -29,11 +29,12 @@ def getcryptodata(coinname):
 		next(csvreader)
 		for row in csvreader:
 			coin = row[0]
-			date = row[1]
-			close = row[5]
+			if coin  == coinname:
+				date = row[1]
+				close = row[5]
 
-			dtobj = datetime.datetime.strptime(date, '%b %d, %Y')
-			date = datetime.datetime.strftime(dtobj, '%Y-%m-%d')
+				dtobj = datetime.datetime.strptime(date, '%b %d, %Y')
+				date = datetime.datetime.strftime(dtobj, '%Y-%m-%d')
 
-			cryptodata[date] = close
+				cryptodata[date] = close
 	return cryptodata

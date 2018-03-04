@@ -1,7 +1,5 @@
 import csv
 import nltk
-import gensim
-import datetime
 import collections
 from nltk.stem.snowball import EnglishStemmer
 from nltk.tokenize import RegexpTokenizer

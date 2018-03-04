@@ -4,39 +4,38 @@ import os
 import csv
 
 class StockData:
-    stockdata = []
+
+    stockdata = {}
+    mindate = ''
+    maxdate = ''
+    minprice = 0
+    maxprice = 0
+
     def __init__(self):
         stockdata = []
 
-    def __init__(self, path, ticker):
-        self.getTrades(path, ticker) 
+    def __init__(self, ticker):
+        self.getTrades(ticker)
 
-    def getTrades(self, path, ticker):
-        if path == '':
-            path = '../ExtractedData/Stocks/'
-        with open(path + ticker, 'r') as stockfile:
+    def getTrades(self, ticker):
+        dates = []
+        prices = []
+        with open('raw_data/Stocks/'+ticker+'.us.txt', 'r') as stockfile:
             stockreader = csv.reader(stockfile, delimiter=',')
             for row in stockreader:
-                self.stockdata.append(row) 
+                date = row[0]
+                close = float(row[4])
+
+                dates.append(date)
+                prices.append(close)
+                self.stockdata[date] = close
+                
+        self.mindate = min(dates)
+        self.maxdate = max(dates)
+        self.minprice = min(prices)
+        self.maxprice = max(prices)
 
     def getAllStockData(self):
         return self.stockdata
-    
-    def getDate(self, date):
-        for index, dateData in enumerate(self.stockdata):
-            if dateData[0] == date:
-                return dateData, index
-        return None
 
-    def checkFlux(self, date):
-        index = self.getDate(date)
-        i = index[1]
-        
-        curr = self.stockdata[i]
-        prev = self.stockdata[i-1]
-
-        if curr[1] > prev[4]:
-            print("Increase")
-        else:
-            print("Decrease")
         

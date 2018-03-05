@@ -1,105 +1,129 @@
 #!/usr/bin/env python3
 
 
+from trades import StockData
+from CryptoData import CryptoData
+from NewsData import NewsData
+import datetime
 import sys
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Reshape, LSTM, Dense, Embedding, Dropout, Activation, Flatten
+from keras.layers import Reshape, LSTM, Dense, Embedding, Dropout, Activation, Flatten, Masking
 from keras.preprocessing.text import one_hot
 from keras.preprocessing.sequence import pad_sequences
 
 def get_rnn_model(max_features, max_len, in_shape):
+    return None
     model = Sequential()
     #model.add(Embedding(input_dim = 1,
     #                    output_dim = 256,
     #                    input_length = max_len))
     
+    #model.add(Masking(mask_value = -1, input_shape = in_shape)
     model.add(LSTM(max_features, input_shape = in_shape))
     model.add(Reshape((max_len, max_features)))
     #model.add(Dropout(0.5))
     model.add(Dense(max_len, activation = 'relu'))
     model.add(Dense(max_len, activation = 'softmax'))
-    #model.add(Dense(max_features))
-    model.compile(loss='categorical_crossentropy',
+    #model.add(Dense(max_features)) 
+    model.compile(loss='mse',
                   optimizer='adam',
                   metrics=['accuracy'])
     return model
 
-def load_vocab(vocab_fn):
-    """from lab5"""
-    # idx2word is list of tokens
-    with open(vocab_fn) as f:
-        idx2word = [L.strip() for L in f]
-    # and the inverse mapping...
-    word2idx = {}
-    for i, word in enumerate(idx2word):
-        word2idx[word] = i
-    return idx2word, word2idx
+def processData():
+    allData = []
+    tech_stocks = ["fb", "googl", "intc", "amd", "nvda"]
+    coin_names = ["bitcoin"]
+    path = '../ExtractedData/Stocks/'
 
-def get_lines(fn, strip = True):
-    lines = []
-    with open(fn) as f:
-        for line in f:
-            L = line.strip() if strip else line
-            lines.append(L)
-    return lines
+    startDate = "0000"
+    endDate = "9999"
+    maxTickerPrice = 0
+    maxCoinPrice = 0
 
-def load_set(fn, max_len, word2idx):
-    seq_lengths = []
-    sequences = []
-    with open(fn) as f:
-        for line in f:
-            # prepend <s>'s integer, then map remaining tokens to
-            # integers and append
-            token_line = [word2idx["<s>"]]
-            token_line += [word2idx[word] for word in line.strip().split(' ')]
-            orig_len = len(token_line)
-            # </s> not in count yet
-            if orig_len > max_len:
-                # truncate (won't have </s>)
-                new_len = max_len
-                new_line = token_line[0:max_len]
-            else:
-                # pad with </s>
-                new_len = orig_len+1
-                new_line = token_line+([word2idx["</s>"]] * (max_len-orig_len))
-            seq_lengths.append(new_len)
-            sequences.append(new_line)
-    return np.array(sequences), np.array(seq_lengths)
+    # get stock dictionary
+    tickerDicts = {}
+    for ticker in tech_stocks:
+        s = StockData(ticker)
+        if s.mindate > startDate:
+            startDate = s.mindate
+        if s.maxdate < endDate:
+            endDate = s.maxdate
+        if s.maxprice > maxTickerPrice:
+            maxTickerPrice = s.maxprice
+        tickerDicts[ticker] = s
+
+    # get coin dictionary
+    coinDicts = {}
+    for coin in coin_names:
+        c = CryptoData(coin) 
+        if c.mindate > startDate:
+            startDate = c.mindate
+        if c.maxdate < endDate:
+            endDate = c.maxdate
+        if c.maxprice > maxCoinPrice:
+            maxCoinPrice = c.maxprice
+        coinDicts[coin] = c
+
+    # get headline dictionary
+    n = NewsData()
+    newsdict = n.getNewsData()
+    if n.mindate > startDate:
+        startDate = n.mindate
+    if n.maxdate < endDate:
+        endDate = n.maxdate
+
+    print("Date range: %s, %s"%(startDate,endDate))
 
 
-def make_one_hot(value, vocab_size):
-    if value >= vocab_size:
-        return None
-    z = np.zeros(vocab_size)
-    z[value] = 1
-    return z
+    # combine values from dictionary by date
+    startParts = map(int, startDate.split("-"))
+    year, month, day = list(startParts)
+    sdate = datetime.date(year, month, day)
 
-def encode_line(line, word2idx):
-    V = len(word2idx)
-    tokens = line.strip().split(' ')
-    #enc = [float(word2idx[t])/float(V) for t in tokens]
-    enc = [word2idx[t] for t in tokens]
+    endParts = map(int, endDate.split("-"))
+    year, month, day = list(endParts)
+    edate = datetime.date(year, month, day)
     
-    return enc
+    currDate = sdate
+    allData = {}
+    while currDate <= edate:
+        date = "%d-%d-%d"%(currDate.year, currDate.month, currDate.day) 
 
-def decode_line(enc_line, idx2word):
-    V = len(idx2word)
-    #indices = [int(V*f) for f in enc_line]
-    decoded = [idx2word[idx] for idx in enc_line]
-    return " ".join(decoded)
+        data = []
+        for ticker in tickerDicts:
+            if date in tickerDicts:
+                t = ticker[date]
+                data.append(t/maxTickerPrice)
+            else:
+                data.append(-1)
 
-def seq_to_one_hot_seq(vals, vocab_size):
-    return [make_one_hot(v, vocab_size) for v in vals]
+        for coin in coinDicts:
+            if date in coinDicts:
+                c = coinDicts[date]
+                data.append(c/maxCoinPrice)
+            else:
+                data.append(-1)
+
+        if date in newsdict:
+            data.append(newsdict[date])
+        else:
+            data.append(-1)
+
+        currDate += datetime.timedelta(days=1)
+        if currDate == edate:
+            print("vector size: %d"%len(data))
+        allData[date] = data
 
 def main():
+    processData()
+    return
     train_path = "data/ptb.train.txt"
     dev_path = "data/ptb.valid.txt"
     test_path = "data/ptb.test.txt"
     vocab = "word_vocab.txt"
     max_len = 50
-    idx2word, word2idx = load_vocab(vocab)
-    print("loading training data...")
     #train_seqs, train_seq_lens = load_set(train_path, max_len, word2idx)
     #dev_seqs, dev_seq_lens = load_set(dev_path, max_len, word2idx)    
     est_vocab_size = 11000
@@ -108,31 +132,18 @@ def main():
     #dev_seqs = dev_seqs.transpose()
     #N = train_seq_lens.shape[0]
     #V = len(idx2word) # vocab size
-    print("vocab size: %d"%est_vocab_size)
+
+
+    #train_size =
+    #test_size =
+    #train, test = 
+
     
     # load the training data the keras way
-    all_lines = get_lines(train_path)
-    print("line count: %s"%len(all_lines))
-    if len(all_lines) > 0:
-        print("first line: %s"%all_lines[0])
-    else:
-        print("no training data...")
-        return
     #encoded_lines = [one_hot(line, est_vocab_size) for line in all_lines]
-    encoded_lines = np.asanyarray([encode_line(line, word2idx) for line in all_lines])
-    print("first encoded line: %s"%encoded_lines[0])
-    print("... and decoded: %s"%decode_line(encoded_lines[0], idx2word))
-    print("padding")
 
     padded_lines = pad_sequences(encoded_lines, max_len+1, padding='post')
 
-
-    print("encoded count: %s"%len(encoded_lines))
-    print("padded count: %s"%len(padded_lines))
-    
-    print("encoded_lines.shape: %s"%str(encoded_lines.shape))
-    print("padded_lines.shape: %s"%str(padded_lines.shape))
-    
     train_x = padded_lines[:,:len(padded_lines[0])-1]
     train_y = padded_lines[:,1:]
 

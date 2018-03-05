@@ -12,13 +12,9 @@ from keras.preprocessing.text import one_hot
 from keras.preprocessing.sequence import pad_sequences
 
 def get_rnn_model(max_features, max_len, in_shape):
-    return None
     model = Sequential()
-    #model.add(Embedding(input_dim = 1,
-    #                    output_dim = 256,
-    #                    input_length = max_len))
-    
-    #model.add(Masking(mask_value = -1, input_shape = in_shape)
+
+    model.add(Masking(mask_value = -1, input_shape = in_shape))
     model.add(LSTM(max_features, input_shape = in_shape))
     model.add(Reshape((max_len, max_features)))
     #model.add(Dropout(0.5))
@@ -40,6 +36,7 @@ def processData():
     endDate = "9999"
     maxTickerPrice = 0
     maxCoinPrice = 0
+    vecSize = 0
 
     # get stock dictionary
     tickerDicts = {}
@@ -114,38 +111,53 @@ def processData():
 
         currDate += datetime.timedelta(days=1)
         if currDate == edate:
-            print("vector size: %d" % len(data))
+            vecSize = len(data)
+            print("vector size: %d" % vecSize)
+        allData[date] = data
+    return allDates, vecSize
+
+def splitDataIntoSequences(allData, maxSeqDays, firstDate):
+    # returns an array of all the subsequences
+    currDate = firstDate
+
+    while currDate <= edate:
+        seqDates = [currDate + datetime.timedelta(days=i) for i in range(maxSeqLen)]
+        date = "%d-%d-%d" % (currDate.year, currDate.month, currDate.day) 
+        dateData = allData[date]
+        
         allData[date] = data
 
+
+
 def main():
-    processData()
-    return
-    train_path = "data/ptb.train.txt"
+    allData, vecSize = processData()
+
+    """train_path = "data/ptb.train.txt"
     dev_path = "data/ptb.valid.txt"
     test_path = "data/ptb.test.txt"
     vocab = "word_vocab.txt"
+    """
+    # we will chop our training data into sequences of this size
     max_len = 50
     #train_seqs, train_seq_lens = load_set(train_path, max_len, word2idx)
     #dev_seqs, dev_seq_lens = load_set(dev_path, max_len, word2idx)
-    est_vocab_size = 11000
+    #est_vocab_size = 11000
 
     #train_seqs = train_seqs.transpose()
     #dev_seqs = dev_seqs.transpose()
     #N = train_seq_lens.shape[0]
     #V = len(idx2word) # vocab size
 
-
     #train_size =
     #test_size =
     #train, test =
 
-    
     # load the training data the keras way
     #encoded_lines = [one_hot(line, est_vocab_size) for line in all_lines]
 
     padded_lines = pad_sequences(encoded_lines, max_len + 1, padding='post')
 
-    train_x = padded_lines[:,:len(padded_lines[0]) - 1]
+    train_x = padded_lines[:,:len(padded_lines[0]mp) - 1]
     train_y = padded_lines[:,1:]
 
     train_x = train_x.reshape((-1,max_len,1))
@@ -156,14 +168,13 @@ def main():
     print("first x: %s" % str(tuple("%.2f" % f for f in train_x[0])))
     print("first y: %s" % str(tuple("%.2f" % f for f in train_y[0])))
     
-
     #train_x = train_seqs[:,:-1]
     #train_y = train_seqs[:,1:]
     print("taining model...")
     print("train_x.shape: %s" % str(train_x.shape))
     print("train_y.shape: %s" % str(train_y.shape))
 
-    model = get_rnn_model(est_vocab_size, max_len, in_shape)
+    model = get_rnn_model(max_len, in_shape)
     
     model.fit(train_x, train_y, batch_size=1,
               epochs=10)

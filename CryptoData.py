@@ -13,7 +13,7 @@ class CryptoData:
 		cryptodata = []
 
 	def __init__(self, coinname):
-		self.setdata(coinname)
+		self.setCryptoData(coinname)
 
 	def setCryptoData(self, coinname):
 		dates = []
@@ -35,7 +35,7 @@ class CryptoData:
 					dates.append(date)
 					prices.append(close)
 					self.cryptodata[date] = close
-					
+
 		self.mindate = min(dates)
 		self.maxdate = max(dates)
 		self.minprice = min(prices)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 from trades import StockData
 from CryptoData import CryptoData
 from NewsData import NewsData
@@ -25,7 +24,7 @@ def get_rnn_model(max_features, max_len, in_shape):
     #model.add(Dropout(0.5))
     model.add(Dense(max_len, activation = 'relu'))
     model.add(Dense(max_len, activation = 'softmax'))
-    #model.add(Dense(max_features)) 
+    #model.add(Dense(max_features))
     model.compile(loss='mse',
                   optimizer='adam',
                   metrics=['accuracy'])
@@ -46,6 +45,7 @@ def processData():
     tickerDicts = {}
     for ticker in tech_stocks:
         s = StockData(ticker)
+        s.normalize()
         if s.mindate > startDate:
             startDate = s.mindate
         if s.maxdate < endDate:
@@ -57,7 +57,8 @@ def processData():
     # get coin dictionary
     coinDicts = {}
     for coin in coin_names:
-        c = CryptoData(coin) 
+        c = CryptoData(coin)
+        c.normalize()
         if c.mindate > startDate:
             startDate = c.mindate
         if c.maxdate < endDate:
@@ -74,7 +75,7 @@ def processData():
     if n.maxdate < endDate:
         endDate = n.maxdate
 
-    print("Date range: %s, %s"%(startDate,endDate))
+    print("Date range: %s, %s" % (startDate,endDate))
 
 
     # combine values from dictionary by date
@@ -89,20 +90,20 @@ def processData():
     currDate = sdate
     allData = {}
     while currDate <= edate:
-        date = "%d-%d-%d"%(currDate.year, currDate.month, currDate.day) 
+        date = "%d-%d-%d" % (currDate.year, currDate.month, currDate.day) 
 
         data = []
         for ticker in tickerDicts:
             if date in tickerDicts:
                 t = ticker[date]
-                data.append(t/maxTickerPrice)
+                data.append(t / maxTickerPrice)
             else:
                 data.append(-1)
 
         for coin in coinDicts:
             if date in coinDicts:
                 c = coinDicts[date]
-                data.append(c/maxCoinPrice)
+                data.append(c / maxCoinPrice)
             else:
                 data.append(-1)
 
@@ -113,7 +114,7 @@ def processData():
 
         currDate += datetime.timedelta(days=1)
         if currDate == edate:
-            print("vector size: %d"%len(data))
+            print("vector size: %d" % len(data))
         allData[date] = data
 
 def main():
@@ -125,7 +126,7 @@ def main():
     vocab = "word_vocab.txt"
     max_len = 50
     #train_seqs, train_seq_lens = load_set(train_path, max_len, word2idx)
-    #dev_seqs, dev_seq_lens = load_set(dev_path, max_len, word2idx)    
+    #dev_seqs, dev_seq_lens = load_set(dev_path, max_len, word2idx)
     est_vocab_size = 11000
 
     #train_seqs = train_seqs.transpose()
@@ -136,15 +137,15 @@ def main():
 
     #train_size =
     #test_size =
-    #train, test = 
+    #train, test =
 
     
     # load the training data the keras way
     #encoded_lines = [one_hot(line, est_vocab_size) for line in all_lines]
 
-    padded_lines = pad_sequences(encoded_lines, max_len+1, padding='post')
+    padded_lines = pad_sequences(encoded_lines, max_len + 1, padding='post')
 
-    train_x = padded_lines[:,:len(padded_lines[0])-1]
+    train_x = padded_lines[:,:len(padded_lines[0]) - 1]
     train_y = padded_lines[:,1:]
 
     train_x = train_x.reshape((-1,max_len,1))
@@ -152,15 +153,15 @@ def main():
 
     in_shape = train_x.shape[1:]
     
-    print("first x: %s"%str(tuple("%.2f"%f for f in train_x[0])))
-    print("first y: %s"%str(tuple("%.2f"%f for f in train_y[0])))
+    print("first x: %s" % str(tuple("%.2f" % f for f in train_x[0])))
+    print("first y: %s" % str(tuple("%.2f" % f for f in train_y[0])))
     
 
     #train_x = train_seqs[:,:-1]
     #train_y = train_seqs[:,1:]
     print("taining model...")
-    print("train_x.shape: %s"%str(train_x.shape))
-    print("train_y.shape: %s"%str(train_y.shape))
+    print("train_x.shape: %s" % str(train_x.shape))
+    print("train_y.shape: %s" % str(train_y.shape))
 
     model = get_rnn_model(est_vocab_size, max_len, in_shape)
     
@@ -169,8 +170,7 @@ def main():
     #dev_x = train_seqs[:-1,:]
     #dev_y = train_seqs[1:,:]
     #print("evaluating...")
-    #score = model.evaluate(dev_x, dev_y, batch_size=16) 
+    #score = model.evaluate(dev_x, dev_y, batch_size=16)
     #print(score)
-
 if __name__ == "__main__":
     main()

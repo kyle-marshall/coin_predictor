@@ -95,8 +95,8 @@ for i, pair in enumerate(sortednumdates):
 
 writefile = open('raw_data/stocknews/numnews.txt', 'w')
 for pair in sortednumdates:
-	writefile.write(pair[0]+',')
+	writefile.write(pair[0] + ',')
 	for n in pair[1]:
-		writefile.write(str(n)+' ')
+		writefile.write(str(n) + ' ')
 	writefile.write('\n')
 writefile.close()

@@ -25,5 +25,5 @@ class NewsData:
 		self.mindate = min(dates)
 		self.maxdate = max(dates)
 
-	def getNewsData():
+	def getNewsData(self):
 		return self.newsdata

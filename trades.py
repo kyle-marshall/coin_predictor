@@ -1,10 +1,8 @@
-#! /usr/bin/env python
-
+#!  /usr/bin/env python
 import os
 import csv
 
 class StockData:
-
     stockdata = {}
     mindate = ''
     maxdate = ''
@@ -20,8 +18,9 @@ class StockData:
     def getTrades(self, ticker):
         dates = []
         prices = []
-        with open('raw_data/Stocks/'+ticker+'.us.txt', 'r') as stockfile:
+        with open('raw_data/Stocks/' + ticker + '.us.txt', 'r') as stockfile:
             stockreader = csv.reader(stockfile, delimiter=',')
+            next(stockreader)
             for row in stockreader:
                 date = row[0]
                 close = float(row[4])
@@ -35,7 +34,15 @@ class StockData:
         self.minprice = min(prices)
         self.maxprice = max(prices)
 
+
+    def normalize(self):
+        # call after getTrades to map all stockdata values to range [0.0,1.0)
+
+        for date in self.stockdata:
+            v = self.stockdata[date]
+            print(v)
+            self.stockdata[date] = v / self.maxprice
+        
+        
     def getAllStockData(self):
         return self.stockdata
-
-        

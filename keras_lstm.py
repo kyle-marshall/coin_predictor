@@ -114,7 +114,26 @@ def processData():
             vecSize = len(data)
             print("vector size: %d" % vecSize)
         allData[date] = data
-    return allDates, vecSize
+
+    oneday = datetime.timedelta(days=1)
+    today = sdate
+    tomorrow = today + oneday
+    master_x = []
+    master_y = []
+    
+    while today <= edate - oneday:
+        td = datetime.datetime.strftime(today, '%Y-%m-%d')
+        tmrw = datetime.datetime.strftime(tomorrow, '%Y-%m-%d')
+        if td in allData and tmrw in allData:
+            master_x.append(allData[td])
+            tmrwData = allData[tmrw]
+            tmrwPrices = tmrwData[:-1]
+            master_y.append(tmrwPrices)
+
+        today += oneday
+        tomorrow = today + oneday
+
+    return master_x, master_y, vecSize
 
 def splitDataIntoSequences(allData, maxSeqDays, firstDate):
     # returns an array of all the subsequences
@@ -130,7 +149,7 @@ def splitDataIntoSequences(allData, maxSeqDays, firstDate):
 
 
 def main():
-    allData, vecSize = processData()
+    master_x, master_y, vecSize = processData()
 
     """train_path = "data/ptb.train.txt"
     dev_path = "data/ptb.valid.txt"
@@ -155,11 +174,22 @@ def main():
     # load the training data the keras way
     #encoded_lines = [one_hot(line, est_vocab_size) for line in all_lines]
 
-    padded_lines = pad_sequences(encoded_lines, max_len + 1, padding='post')
+    
 
-    train_x = padded_lines[:,:len(padded_lines[0]mp) - 1]
-    train_y = padded_lines[:,1:]
+    #padded_lines = pad_sequences(encoded_lines, max_len + 1, padding='post')
 
+    #train_x = padded_lines[:,:len(padded_lines[0]mp) - 1]
+    #train_y = padded_lines[:,1:]
+
+    test_size =  int(len(master_x)*.8)
+    
+    train_x = master_x[:test_size]
+    train_y = master_y[:test_size]
+
+    test_x = master_x[test_size:]
+    test_y = master_y[test_size:]
+
+    #!!! PROBLEMS HERE!!!
     train_x = train_x.reshape((-1,max_len,1))
     train_y = train_y.reshape((-1,max_len,1))
 

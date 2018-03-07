@@ -29,7 +29,7 @@ def get_rnn_model(max_features, max_len, in_shape):
 def processData():
     allData = []
     tech_stocks = ["fb", "googl", "intc", "amd", "nvda"]
-    coin_names = ["bitcoin"]
+    coin_names = ["bitcoin", "ethereum"]
     path = '../ExtractedData/Stocks/'
 
     startDate = "0000"
@@ -127,26 +127,13 @@ def processData():
         if td in allData and tmrw in allData:
             master_x.append(allData[td])
             tmrwData = allData[tmrw]
-            tmrwPrices = tmrwData[:-1]
+            tmrwPrices = tmrwData[len(tech_stocks):-1]
             master_y.append(tmrwPrices)
 
         today += oneday
         tomorrow = today + oneday
 
     return master_x, master_y, vecSize
-
-def splitDataIntoSequences(allData, maxSeqDays, firstDate):
-    # returns an array of all the subsequences
-    currDate = firstDate
-
-    while currDate <= edate:
-        seqDates = [currDate + datetime.timedelta(days=i) for i in range(maxSeqLen)]
-        date = "%d-%d-%d" % (currDate.year, currDate.month, currDate.day) 
-        dateData = allData[date]
-        
-        allData[date] = data
-
-
 
 def main():
     master_x, master_y, vecSize = processData()

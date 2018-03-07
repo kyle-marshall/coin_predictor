@@ -72,7 +72,7 @@ def processData():
     if n.maxdate < endDate:
         endDate = n.maxdate
 
-    print("Date range: %s, %s" % (startDate,endDate))
+    #print("Date range: %s, %s" % (startDate,endDate))
 
 
     # combine values from dictionary by date
@@ -105,7 +105,7 @@ def processData():
                 data.append(-1)
 
         if date in newsdict:
-            data.append(newsdict[date])
+            data.extend(newsdict[date])
         else:
             data.append(-1)
 
@@ -125,9 +125,12 @@ def processData():
         td = datetime.datetime.strftime(today, '%Y-%m-%d')
         tmrw = datetime.datetime.strftime(tomorrow, '%Y-%m-%d')
         if td in allData and tmrw in allData:
-            master_x.append(allData[td])
+            todayData = allData[td]
+            master_x.append(todayData)
+
             tmrwData = allData[tmrw]
             tmrwPrices = tmrwData[len(tech_stocks):-1]
+
             master_y.append(tmrwPrices)
 
         today += oneday
@@ -145,6 +148,7 @@ def main():
     """
     # we will chop our training data into sequences of this size
     max_len = 50
+
     #train_seqs, train_seq_lens = load_set(train_path, max_len, word2idx)
     #dev_seqs, dev_seq_lens = load_set(dev_path, max_len, word2idx)
     #est_vocab_size = 11000
@@ -170,20 +174,20 @@ def main():
 
     test_size =  int(len(master_x)*.8)
     
-    train_x = master_x[:test_size]
-    train_y = master_y[:test_size]
+    train_x = np.array(master_x[:test_size])
+    train_y = np.array(master_y[:test_size])
 
-    test_x = master_x[test_size:]
-    test_y = master_y[test_size:]
+    test_x = np.array(master_x[test_size:])
+    test_y = np.array(master_y[test_size:])
 
     #!!! PROBLEMS HERE!!!
-    train_x = train_x.reshape((-1,max_len,1))
-    train_y = train_y.reshape((-1,max_len,1))
+    #train_x = train_x.reshape((-1,max_len,1))
+    #train_y = train_y.reshape((-1,max_len,1))
 
     in_shape = train_x.shape[1:]
     
-    print("first x: %s" % str(tuple("%.2f" % f for f in train_x[0])))
-    print("first y: %s" % str(tuple("%.2f" % f for f in train_y[0])))
+    #print("first x: %s" % str(tuple("%.2f" % f for f in train_x[0])))
+    #print("first y: %s" % str(tuple("%.2f" % f for f in train_y[0])))
     
     #train_x = train_seqs[:,:-1]
     #train_y = train_seqs[:,1:]

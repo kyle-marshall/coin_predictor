@@ -15,13 +15,13 @@ from keras.preprocessing.sequence import pad_sequences
 def get_rnn_model(max_features, max_len, in_shape, outUnits):
     model = Sequential()
 
-    #model.add(Masking(mask_value = -1, input_shape = in_shape))
+    model.add(Masking(mask_value = -1, input_shape = in_shape))
     model.add(LSTM(10, input_shape = in_shape))
-    #model.add(Reshape((max_len, outUnits)))
-    model.add(Dense(outUnits, activation = 'relu'))
+    model.add(Dense(max_len*outUnits, activation = 'relu'))
     #model.add(Dropout(0.5))
     #model.add(Dense(max_len, activation = 'relu'))
-    model.add(Dense(outUnits, activation = 'softmax'))
+    model.add(Dense(max_len*outUnits, activation = 'softmax'))
+    model.add(Reshape((max_len, outUnits)))
     #model.add(Dense(max_features))
     model.compile(loss='categorical_crossentropy',
                   optimizer='adam',

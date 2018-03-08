@@ -177,6 +177,7 @@ def main():
     test_size =  int(len(master_x)*.8)
     
     train_x = np.array(master_x[:test_size])
+    print(train_x)
     train_y = np.array(master_y[:test_size])
 
     test_x = np.array(master_x[test_size:])

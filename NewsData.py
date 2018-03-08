@@ -25,5 +25,14 @@ class NewsData:
 		self.mindate = min(dates)
 		self.maxdate = max(dates)
 
+	def normalize(self):
+		for n in self.newsdata:
+			normarray = [0 for i in range(5000)]
+			array = self.newsdata[n]
+			for i in array:
+				if i.isdigit():
+					normarray[int(i)] = 1
+			self.newsdata[n] = normarray
+
 	def getNewsData(self):
 		return self.newsdata

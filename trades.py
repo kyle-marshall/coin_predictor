@@ -40,7 +40,6 @@ class StockData:
 
         for date in self.stockdata:
             v = self.stockdata[date]
-            print(v)
             self.stockdata[date] = v / self.maxprice
         
         

@@ -11,7 +11,7 @@ from keras.layers import Reshape, LSTM, Dense, Embedding, Dropout, Activation, F
 from keras.preprocessing.text import one_hot
 from keras.preprocessing.sequence import pad_sequences
 
-def get_rnn_model(max_features, max_len, in_shape):
+def get_rnn_model(max_features, in_shape):
     model = Sequential()
 
     model.add(Masking(mask_value = -1, input_shape = in_shape))
@@ -39,7 +39,7 @@ def processData():
     vecSize = 0
 
     # get stock dictionary
-    tickerDicts = {}
+    tickerObjs = {}
     for ticker in tech_stocks:
         s = StockData(ticker)
         s.normalize()
@@ -49,10 +49,10 @@ def processData():
             endDate = s.maxdate
         if s.maxprice > maxTickerPrice:
             maxTickerPrice = s.maxprice
-        tickerDicts[ticker] = s
+        tickerObjs[ticker] = s
 
     # get coin dictionary
-    coinDicts = {}
+    coinObjs = {}
     for coin in coin_names:
         c = CryptoData(coin)
         c.normalize()
@@ -62,7 +62,7 @@ def processData():
             endDate = c.maxdate
         if c.maxprice > maxCoinPrice:
             maxCoinPrice = c.maxprice
-        coinDicts[coin] = c
+        coinObjs[coin] = c
 
     # get headline dictionary
     n = NewsData()
@@ -90,16 +90,18 @@ def processData():
         date = "%d-%d-%d" % (currDate.year, currDate.month, currDate.day) 
 
         data = []
-        for ticker in tickerDicts:
-            if date in tickerDicts:
-                t = ticker[date]
+        for ticker in tickerObjs:
+            tickerData = tickerObjs[ticker].stockdata
+            if date in tickerData:
+                t = tickerData[date]
                 data.append(t / maxTickerPrice)
             else:
                 data.append(-1)
 
-        for coin in coinDicts:
-            if date in coinDicts:
-                c = coinDicts[date]
+        for coinName in coinObjs:
+            coinData = coinObjs[coinName].cryptodata
+            if date in coinData:
+                c = coinData[date]
                 data.append(c / maxCoinPrice)
             else:
                 data.append(-1)
@@ -195,7 +197,7 @@ def main():
     print("train_x.shape: %s" % str(train_x.shape))
     print("train_y.shape: %s" % str(train_y.shape))
 
-    model = get_rnn_model(max_len, in_shape)
+    model = get_rnn_model(vecSize, in_shape)
     
     model.fit(train_x, train_y, batch_size=1,
               epochs=10)

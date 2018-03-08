@@ -190,6 +190,14 @@ def getRandomSequence(master_x, master_y, seq_length):
 
 def main():
     master_x, master_y, vecSize, outSize = processData()
+    testRat = 0.1
+
+    # split master into train / test sets
+    forTest = int(len(master_x)*testRat)
+    trainX = master_x[:forTest]
+    trainY = master_y[:forTest]
+    testX = master_x[forTest:]
+    testY = master_y[forTest:]
 
     """train_path = "data/ptb.train.txt"
     dev_path = "data/ptb.valid.txt"
@@ -198,13 +206,13 @@ def main():
     """
 
     max_len = 50
-    
+    epochs = 15
     trains_x = []
     trains_y = []
     sequenceLength = 30
     sequenceCount = 600
     for i in range(sequenceCount):
-        x, y = getRandomSequence(master_x, master_y, sequenceLength)
+        x, y = getRandomSequence(trainX, trainY, sequenceLength)
         trains_x.append(x)
         trains_y.append(y)
 
@@ -217,7 +225,17 @@ def main():
         t = input()
         """
     trains_x = np.asanyarray(trains_x)
-    trains_y = np.asarray(trains_y)
+    trains_y = np.asanyarray(trains_y)
+
+    testSeqCount = 10
+    tests_x = []
+    tests_y = []
+    for i in range(testSeqCount):
+        x, y = getRandomSequence(testX, testY, sequenceLength)
+        tests_x.append(x)
+        tests_y.append(y)
+    tests_x = np.asanyarray(tests_x)
+    tests_y = np.asanyarray(tests_y)
 
     print("TARGET!! %s" % str(trains_y.shape))
     
@@ -238,17 +256,18 @@ def main():
     print(in_shape)
 
     model = get_rnn_model(vecSize, sequenceLength, in_shape, 3)
-    
+    epochs = 12
     model.fit(trains_x, trains_y,
-              epochs=10)
+              epochs=epochs)
 
     # EVALUATION
+    print("----IT'S EVAL TIME----")
     # to do: predict on test data instead of train data
     
-    outputs = model.predict(np.array([trains_x[0]]), verbose=1)
+    outputs = model.predict(tests_x, verbose=1)
     pred_class = list(np.argmax(vec) for vec in outputs[0])
-    act_class = list(np.argmax(vec) for vec in trains_y[0])
-        
+    act_class = list(np.argmax(vec) for vec in tests_y[0])
+    
     print("==OUTPUT==")
     print(outputs)
 
@@ -257,9 +276,8 @@ def main():
     print(act_class)
     print("==PREDICTED CLASS==")
     print(pred_class)
-    print("==TRAINS_Y[0]==")
-    
-    print(trains_y[0])
+    print("==testY[0]==")
+    print(tests_y[0])
 
 
 if __name__ == "__main__":

@@ -18,15 +18,16 @@ def get_rnn_model(max_features, max_len, in_shape, outUnits):
     model = Sequential()
 
     model.add(Masking(mask_value = -1, input_shape = in_shape))
-    model.add(LSTM(10, input_shape = in_shape))
+    model.add(LSTM(10, input_shape = in_shape, return_sequences=True))
     model.add(Dense(max_len*outUnits, activation = 'relu'))
     #model.add(Dropout(0.5))
     #model.add(Dense(max_len, activation = 'relu'))
-    model.add(Dense(max_len*outUnits))
-    model.add(Reshape((max_len, outUnits)))
+    #model.add(Dense(max_len*outUnits))
+    model.add(Dense(outUnits))
+    #model.add(Reshape((max_len, outUnits)))
     model.add(Activation("softmax"))
     #model.add(Dense(max_features))
-    model.compile(loss='categorical_crossentropy',
+    model.compile(loss='binary_crossentropy',
                   optimizer='adam',
                   metrics=['accuracy'])
     return model
@@ -144,6 +145,7 @@ def processData():
     
     daysCompared = 0
     daysAdded = 0
+    k = 2 # class count
     while today < edate:
         daysCompared = daysCompared + 1
         td = datetime.datetime.strftime(today, '%Y-%m-%d')
@@ -163,17 +165,18 @@ def processData():
             todayPrice = coinObjs["bitcoin"].cryptodata[td]
             tmrwPrice = coinObjs["bitcoin"].cryptodata[tmrw]
 
-            k = 3 # class count
+
             c = 0
-            if (abs(tmrwPrice-todayPrice) < threshold*todayPrice ):
+            """if (abs(tmrwPrice-todayPrice) < threshold*todayPrice ):
                 #same
                 c = 0
-            elif(todayPrice > tmrwPrice):
+            """
+            if(todayPrice > tmrwPrice):
                 #dropped
-                c = 1
+                c = 0
             elif(todayPrice < tmrwPrice):
                 #increase
-                c = 2
+                c = 1
             out = [0]*k
             out[c] = 1
 
@@ -185,7 +188,7 @@ def processData():
 
     print("Tried %d dates, stored %d" % (daysCompared, daysAdded) )
 
-    return master_x, master_y, vecSize, 3
+    return master_x, master_y, vecSize, k
 
 def getRandomSequence(master_x, master_y, seq_length):
     start = randint(0, len(master_x) - seq_length*2)
@@ -211,7 +214,7 @@ def analyze(pred, act):
 
 def main():
     master_x, master_y, vecSize, outSize = processData()
-    testRat = 0.1
+    testRat = 0.15
 
     # split master into train / test sets
     forTest = int(len(master_x)*testRat)
@@ -231,7 +234,7 @@ def main():
     trains_y = []
     sequenceLength = 50
 
-    sequenceCount = 400
+    sequenceCount = 500
 
     for i in range(sequenceCount):
         x, y = getRandomSequence(trainX, trainY, sequenceLength)
@@ -263,7 +266,7 @@ def main():
     
     #trains_x = trains_x.reshape((-1, sequenceLength, vecSize))
     #trains_x = trains_x.reshape((sequenceCount, sequenceLength, vecSize, 1))
-    trains_y = trains_y.reshape((-1, sequenceLength, 3))
+    #trains_y = trains_y.reshape((-1, sequenceLength, 3))
 
     #print("first x: %s" % str(tuple("%.2d" % f for f in trains_x[0])))
     #print("first y: %s" % str(tuple("%.2d" % f for f in trains_y[0])))
@@ -276,9 +279,9 @@ def main():
     print("trains_y.shape: %s" % str(trains_y.shape))
     print(in_shape)
 
-    model = get_rnn_model(vecSize, sequenceLength, in_shape, 3)
-    epochs = 10
-    model.fit(trains_x, trains_y,
+    model = get_rnn_model(vecSize, sequenceLength, in_shape, 2)
+    epochs = 5
+    model.fit(trains_x, trains_y, batch_size = 32,
               epochs=epochs)
 
     # EVALUATION
@@ -289,7 +292,6 @@ def main():
 
     pred_class = sum((list(np.argmax(vec) for vec in outty) for outty in outputs), [])
     act_class = sum((list(np.argmax(vec) for vec in testy) for testy in tests_y), [])
-
     
     predCount = len(pred_class)
     correct = 0
@@ -300,7 +302,6 @@ def main():
     
     print("==OUTPUT==")
     print(outputs)
-
 
     print("Test score: %f"%testScore)
     print("classes = {0: stayed, 1: dropped, 2: rose}")

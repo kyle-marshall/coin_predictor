@@ -158,7 +158,7 @@ def processData():
             #master_x.append(list(list([d] for d in todayData)))
             master_x.append(todayData)
 
-            threshold = .05
+            threshold = .003
 
             todayPrice = coinObjs["bitcoin"].cryptodata[td]
             tmrwPrice = coinObjs["bitcoin"].cryptodata[tmrw]
@@ -211,7 +211,7 @@ def analyze(pred, act):
 
 def main():
     master_x, master_y, vecSize, outSize = processData()
-    testRat = 0.2
+    testRat = 0.1
 
     # split master into train / test sets
     forTest = int(len(master_x)*testRat)
@@ -274,7 +274,6 @@ def main():
     print("taining model...")
     print("trains_x.shape: %s" % str(trains_x.shape))
     print("trains_y.shape: %s" % str(trains_y.shape))
-
     print(in_shape)
 
     model = get_rnn_model(vecSize, sequenceLength, in_shape, 3)
@@ -298,12 +297,12 @@ def main():
         if pred_class[i] == act_class[i]:
             correct += 1
     testScore = float(correct)/float(predCount)
-    print("Test score: %f"%testScore)
-    
     
     print("==OUTPUT==")
     print(outputs)
 
+
+    print("Test score: %f"%testScore)
     print("classes = {0: stayed, 1: dropped, 2: rose}")
     print("== ACTUAL CLASS[0] ==")
     print(act_class)

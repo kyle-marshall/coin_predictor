@@ -234,9 +234,9 @@ def main():
 
     trains_x = []
     trains_y = []
-    sequenceLength = 30
+    sequenceLength = 10
 
-    sequenceCount = 300
+    sequenceCount = 600
 
     for i in range(sequenceCount):
         x, y = getRandomSequence(trainX, trainY, sequenceLength)

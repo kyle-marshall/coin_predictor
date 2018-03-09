@@ -7,6 +7,7 @@ import datetime
 import sys
 from random import randint
 import numpy as np
+from sklearn.metrics import confusion_matrix
 from keras.models import Sequential
 from keras.layers import Reshape, LSTM, Dense, Embedding, Dropout, Activation, Flatten, Masking
 from keras.preprocessing.text import one_hot
@@ -32,7 +33,7 @@ def get_rnn_model(max_features, max_len, in_shape, outUnits):
 
 def processData():
     allData = []
-    tech_stocks = ["fb", "googl", "intc", "amd", "nvda"]
+    tech_stocks = ["fb", "googl", "intc", "amd", "nvda", "msft", "amzn", "ibm", "asx"]
     coin_names = ["bitcoin"]
     path = '../ExtractedData/Stocks/'
 
@@ -118,6 +119,7 @@ def processData():
             data.extend(newsdict[date])
         else:
             data.extend([0.]*numWords)
+        
 
         currDate += datetime.timedelta(days=1)
         if currDate == edate:
@@ -149,14 +151,14 @@ def processData():
         if td in allData and tmrw in allData:
             todayData = list(allData[td])
             datLen = len(todayData)
-            if not datLen == 5006:
+            if not datLen == numWords + len(tech_stocks) + len(coin_names):
                 print("YO!!! datLen: %d"%datLen)
                 continue
 
             #master_x.append(list(list([d] for d in todayData)))
             master_x.append(todayData)
 
-            threshold = .01
+            threshold = .05
 
             todayPrice = coinObjs["bitcoin"].cryptodata[td]
             tmrwPrice = coinObjs["bitcoin"].cryptodata[tmrw]
@@ -189,9 +191,27 @@ def getRandomSequence(master_x, master_y, seq_length):
     start = randint(0, len(master_x) - seq_length*2)
     return master_x[start:start + seq_length], master_y[start:start + seq_length]
 
+def prepDataForAnalysis(output):
+    results = []
+    for seq in range(0, len(output)):
+        results.append(list(np.argmax(vec) for vec in output[seq])) 
+    return np.array(results)
+
+def analyze(pred, act):
+    tot = pred.shape[0] * pred.shape[1]
+    totCorrect = 0
+    for seq in range(0, len(pred)):
+        cm = confusion_matrix(pred[seq], act[seq], labels = [0, 1, 2])
+        diag = np.diagonal(cm).copy()
+        correct = np.sum(diag)
+        totCorrect += correct
+        print(cm)
+        print(tot, totCorrect)
+    return totCorrect / tot 
+
 def main():
     master_x, master_y, vecSize, outSize = processData()
-    testRat = 0.1
+    testRat = 0.2
 
     # split master into train / test sets
     forTest = int(len(master_x)*testRat)
@@ -207,11 +227,12 @@ def main():
     """
 
     max_len = 50
-    epochs = 15
     trains_x = []
     trains_y = []
     sequenceLength = 50
+
     sequenceCount = 400
+
     for i in range(sequenceCount):
         x, y = getRandomSequence(trainX, trainY, sequenceLength)
         trains_x.append(x)
@@ -228,7 +249,7 @@ def main():
     trains_x = np.asanyarray(trains_x)
     trains_y = np.asanyarray(trains_y)
 
-    testSeqCount = 10
+    testSeqCount = 20
     tests_x = []
     tests_y = []
     for i in range(testSeqCount):
@@ -257,7 +278,7 @@ def main():
     print(in_shape)
 
     model = get_rnn_model(vecSize, sequenceLength, in_shape, 3)
-    epochs = 12
+    epochs = 10
     model.fit(trains_x, trains_y,
               epochs=epochs)
 
@@ -266,6 +287,7 @@ def main():
     # to do: predict on test data instead of train data
     
     outputs = model.predict(tests_x, verbose=1)
+
     pred_class = sum((list(np.argmax(vec) for vec in outty) for outty in outputs), [])
     act_class = sum((list(np.argmax(vec) for vec in testy) for testy in tests_y), [])
 
@@ -289,6 +311,23 @@ def main():
     print(pred_class)
     print("== testY[0] ==")
     print(tests_y[0])
+
+    """
+    pred_class = prepDataForAnalysis(outputs)
+    act_class = prepDataForAnalysis(tests_y)
+    
+    result = analyze(pred_class, act_class)
+    print ("PERCENTAGE = %s" % result)
+    
+    #print("==OUTPUT==")
+    #print(outputs)
+
+    #print("classes = {0: stayed, 1: dropped, 2: rose}")
+    #print("==ACTUAL CLASS==")
+    #print(act_class[0])
+    #print("==PREDICTED CLASS==")
+    #print(pred_class[0])
+    """
 
 
 if __name__ == "__main__":

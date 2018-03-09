@@ -27,7 +27,7 @@ def get_rnn_model(max_features, max_len, in_shape, outUnits):
     #model.add(Reshape((max_len, outUnits)))
     model.add(Activation("softmax"))
     #model.add(Dense(max_features))
-    model.compile(loss='sparse_categorical_crossentropy',
+    model.compile(loss='categorical_crossentropy',
                   optimizer='adam',
                   metrics=['accuracy'])
     return model

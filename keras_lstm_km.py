@@ -18,7 +18,7 @@ def get_rnn_model(max_features, max_len, in_shape, outUnits):
     model = Sequential()
 
     model.add(Masking(mask_value = -1, input_shape = in_shape))
-    model.add(LSTM(10, input_shape = in_shape, return_sequences=True))
+    model.add(LSTM(output_dim=64, input_shape = in_shape))
     model.add(Dense(max_len*outUnits, activation = 'relu'))
     #model.add(Dropout(0.5))
     #model.add(Dense(max_len, activation = 'relu'))
@@ -27,7 +27,7 @@ def get_rnn_model(max_features, max_len, in_shape, outUnits):
     #model.add(Reshape((max_len, outUnits)))
     model.add(Activation("softmax"))
     #model.add(Dense(max_features))
-    model.compile(loss='binary_crossentropy',
+    model.compile(loss='sparse_categorical_crossentropy',
                   optimizer='adam',
                   metrics=['accuracy'])
     return model
@@ -181,10 +181,13 @@ def processData():
             out[c] = 1
 
             master_y.append(out)
-            daysAdded = daysAdded + 1
 
+            daysAdded = daysAdded + 1
+        
         today += oneday
         tomorrow = today + oneday
+
+
 
     print("Tried %d dates, stored %d" % (daysCompared, daysAdded) )
 
@@ -192,7 +195,7 @@ def processData():
 
 def getRandomSequence(master_x, master_y, seq_length):
     start = randint(0, len(master_x) - seq_length*2)
-    return master_x[start:start + seq_length], master_y[start:start + seq_length]
+    return master_x[start:start + seq_length], master_y[start+seq_length-1]
 
 def prepDataForAnalysis(output):
     results = []
@@ -229,12 +232,11 @@ def main():
     vocab = "word_vocab.txt"
     """
 
-    max_len = 50
     trains_x = []
     trains_y = []
-    sequenceLength = 50
+    sequenceLength = 30
 
-    sequenceCount = 500
+    sequenceCount = 300
 
     for i in range(sequenceCount):
         x, y = getRandomSequence(trainX, trainY, sequenceLength)
@@ -252,7 +254,7 @@ def main():
     trains_x = np.asanyarray(trains_x)
     trains_y = np.asanyarray(trains_y)
 
-    testSeqCount = 20
+    testSeqCount = 50
     tests_x = []
     tests_y = []
     for i in range(testSeqCount):
@@ -266,7 +268,8 @@ def main():
     
     #trains_x = trains_x.reshape((-1, sequenceLength, vecSize))
     #trains_x = trains_x.reshape((sequenceCount, sequenceLength, vecSize, 1))
-    #trains_y = trains_y.reshape((-1, sequenceLength, 3))
+    #trains_y = trains_y.reshape((-1, sequenceLength))
+    
 
     #print("first x: %s" % str(tuple("%.2d" % f for f in trains_x[0])))
     #print("first y: %s" % str(tuple("%.2d" % f for f in trains_y[0])))
@@ -280,7 +283,7 @@ def main():
     print(in_shape)
 
     model = get_rnn_model(vecSize, sequenceLength, in_shape, 2)
-    epochs = 5
+    epochs = 10
     model.fit(trains_x, trains_y, batch_size = 32,
               epochs=epochs)
 
@@ -290,8 +293,8 @@ def main():
     
     outputs = model.predict(tests_x, verbose=1)
 
-    pred_class = sum((list(np.argmax(vec) for vec in outty) for outty in outputs), [])
-    act_class = sum((list(np.argmax(vec) for vec in testy) for testy in tests_y), [])
+    pred_class = list(np.argmax(vec) for vec in outputs)
+    act_class = list(np.argmax(vec) for vec in tests_y)
     
     predCount = len(pred_class)
     correct = 0

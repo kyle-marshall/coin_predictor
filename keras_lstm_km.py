@@ -21,8 +21,9 @@ def get_rnn_model(max_features, max_len, in_shape, outUnits):
     model.add(Dense(max_len*outUnits, activation = 'relu'))
     #model.add(Dropout(0.5))
     #model.add(Dense(max_len, activation = 'relu'))
-    model.add(Dense(max_len*outUnits, activation = 'softmax'))
+    model.add(Dense(max_len*outUnits))
     model.add(Reshape((max_len, outUnits)))
+    model.add(Activation("softmax"))
     #model.add(Dense(max_features))
     model.compile(loss='categorical_crossentropy',
                   optimizer='adam',
@@ -101,7 +102,7 @@ def processData():
             tickerData = tickerObjs[ticker].stockdata
             if date in tickerData:
                 t = tickerData[date]
-                data.append(t / maxTickerPrice)
+                data.append(t)
             else:
                 data.append(-1)
 
@@ -109,7 +110,7 @@ def processData():
             coinData = coinObjs[coinName].cryptodata
             if date in coinData:
                 c = coinData[date]
-                data.append(c / maxCoinPrice)
+                data.append(c)
             else:
                 data.append(-1)
 
@@ -209,8 +210,8 @@ def main():
     epochs = 15
     trains_x = []
     trains_y = []
-    sequenceLength = 30
-    sequenceCount = 600
+    sequenceLength = 50
+    sequenceCount = 400
     for i in range(sequenceCount):
         x, y = getRandomSequence(trainX, trainY, sequenceLength)
         trains_x.append(x)
@@ -265,18 +266,28 @@ def main():
     # to do: predict on test data instead of train data
     
     outputs = model.predict(tests_x, verbose=1)
-    pred_class = list(np.argmax(vec) for vec in outputs[0])
-    act_class = list(np.argmax(vec) for vec in tests_y[0])
+    pred_class = sum((list(np.argmax(vec) for vec in outty) for outty in outputs), [])
+    act_class = sum((list(np.argmax(vec) for vec in testy) for testy in tests_y), [])
+
+    
+    predCount = len(pred_class)
+    correct = 0
+    for i in range(predCount):
+        if pred_class[i] == act_class[i]:
+            correct += 1
+    testScore = float(correct)/float(predCount)
+    print("Test score: %f"%testScore)
+    
     
     print("==OUTPUT==")
     print(outputs)
 
     print("classes = {0: stayed, 1: dropped, 2: rose}")
-    print("==ACTUAL CLASS==")
+    print("== ACTUAL CLASS[0] ==")
     print(act_class)
-    print("==PREDICTED CLASS==")
+    print("== PREDICTED CLASS[0] ==")
     print(pred_class)
-    print("==testY[0]==")
+    print("== testY[0] ==")
     print(tests_y[0])
 
 
